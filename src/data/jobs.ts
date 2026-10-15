@@ -1,0 +1,378 @@
+import type { LocalityId } from './localities';
+import type { TradeId } from './trades';
+
+/** Text available in one or more languages. English is always present. */
+export interface L10n {
+  en: string;
+  hi?: string;
+  mr?: string;
+}
+
+export type PayPeriod = 'day' | 'hour' | 'job' | 'month';
+export type PayTiming = 'same_day' | 'weekly' | 'on_completion' | 'monthly';
+export type EmployerType = 'household' | 'contractor' | 'business';
+export type Provision = 'tools' | 'safety_gear' | 'food' | 'travel';
+/** Things the listing itself asks of the worker that are known scam patterns. */
+export type RedFlag = 'fee' | 'documents' | 'otp';
+
+export interface Job {
+  id: string;
+  trade: TradeId;
+  title: L10n;
+  description?: L10n;
+  employer: {
+    name: string;
+    type: EmployerType;
+    /** Phone number given by the employer. KaamSetu does not check it. */
+    phone?: string;
+  };
+  locality: LocalityId;
+  landmark?: string;
+  pay: {
+    amount?: number;
+    period?: PayPeriod;
+    timing?: PayTiming;
+  };
+  /** Days from today when work starts (0 = today). */
+  startDay: number;
+  startTime?: string;
+  hoursPerDay?: number;
+  duration: { unit: 'day' | 'week' | 'month'; count: number; ongoing?: boolean };
+  workersNeeded: number;
+  provides: Provision[];
+  /** Whether the listing says anything about safety gear. */
+  safetyGearMentioned: boolean;
+  redFlags: RedFlag[];
+  feeAmount?: number;
+  postedHoursAgo: number;
+  source: 'demo' | 'you';
+}
+
+/**
+ * DEMO DATA. All employers, phone numbers and listings below are fictional
+ * and exist only to demonstrate the prototype. Phone numbers use the
+ * 99999 00xxx pattern so they are obviously not real.
+ */
+export const DEMO_JOBS: Job[] = [
+  {
+    id: 'j1',
+    trade: 'plumber',
+    title: { en: 'Fix bathroom pipe leak', hi: 'बाथरूम पाइप लीकेज ठीक करना', mr: 'बाथरूम पाईप गळती दुरुस्ती' },
+    description: {
+      en: 'Leak under the wash basin and one tap to replace. Owner will buy the parts.',
+      hi: 'वॉश बेसिन के नीचे लीकेज, एक नल बदलना है। सामान मालिक लाएंगे।',
+      mr: 'वॉश बेसिनखाली गळती, एक नळ बदलायचा आहे. सामान मालक आणतील.',
+    },
+    employer: { name: 'Joshi family', type: 'household', phone: '99999 00101' },
+    locality: 'kothrud',
+    landmark: 'Near Karishma Society gate',
+    pay: { amount: 1200, period: 'job', timing: 'same_day' },
+    startDay: 0,
+    startTime: '11:00',
+    hoursPerDay: 4,
+    duration: { unit: 'day', count: 1 },
+    workersNeeded: 1,
+    provides: [],
+    safetyGearMentioned: true,
+    redFlags: [],
+    postedHoursAgo: 1,
+    source: 'demo',
+  },
+  {
+    id: 'j2',
+    trade: 'mason',
+    title: { en: 'Brick work at building site', hi: 'बिल्डिंग साइट पर ईंट का काम', mr: 'बांधकाम साइटवर वीटकाम' },
+    description: {
+      en: 'Ground floor walls for a 4-storey building. Experience with level and plumb line needed.',
+      hi: '4 मंज़िला बिल्डिंग की ग्राउंड फ्लोर दीवारें। लेवल और साहुल का अनुभव चाहिए।',
+      mr: '4 मजली इमारतीच्या तळमजल्याच्या भिंती. लेव्हल आणि ओळंबा वापरण्याचा अनुभव हवा.',
+    },
+    employer: { name: 'Sai Shraddha Builders', type: 'contractor', phone: '99999 00102' },
+    locality: 'hinjewadi',
+    landmark: 'Phase 2, behind bus depot',
+    pay: { amount: 750, period: 'day', timing: 'weekly' },
+    startDay: 0,
+    startTime: '08:30',
+    hoursPerDay: 9,
+    duration: { unit: 'week', count: 3 },
+    workersNeeded: 6,
+    provides: ['tools', 'safety_gear', 'food'],
+    safetyGearMentioned: true,
+    redFlags: [],
+    postedHoursAgo: 3,
+    source: 'demo',
+  },
+  {
+    id: 'j3',
+    trade: 'painter',
+    title: { en: 'Paint a 2BHK flat', hi: '2BHK फ्लैट की पेंटिंग', mr: '2BHK फ्लॅटचे रंगकाम' },
+    description: {
+      en: 'Interior walls and ceiling. Paint and rollers will be provided.',
+      hi: 'अंदर की दीवारें और छत। पेंट और रोलर दिए जाएंगे।',
+      mr: 'आतील भिंती आणि छत. रंग आणि रोलर दिले जातील.',
+    },
+    employer: { name: 'Kulkarni family', type: 'household', phone: '99999 00103' },
+    locality: 'baner',
+    pay: { amount: 800, period: 'day' },
+    startDay: 1,
+    startTime: '09:00',
+    hoursPerDay: 8,
+    duration: { unit: 'day', count: 6 },
+    workersNeeded: 2,
+    provides: ['tools'],
+    safetyGearMentioned: false,
+    redFlags: [],
+    postedHoursAgo: 5,
+    source: 'demo',
+  },
+  {
+    id: 'j4',
+    trade: 'electrician',
+    title: { en: 'New wiring for a shop', hi: 'दुकान में नई वायरिंग', mr: 'दुकानात नवीन वायरिंग' },
+    description: {
+      en: 'Small grocery shop. Lights, fans and two power points.',
+      hi: 'छोटी किराना दुकान। लाइट, पंखे और दो पावर पॉइंट।',
+      mr: 'लहान किराणा दुकान. दिवे, पंखे आणि दोन पॉवर पॉइंट.',
+    },
+    employer: { name: 'Shree Ganesh Kirana', type: 'business', phone: '99999 00104' },
+    locality: 'shivajinagar',
+    pay: {},
+    startDay: 0,
+    duration: { unit: 'day', count: 2 },
+    workersNeeded: 1,
+    provides: [],
+    safetyGearMentioned: false,
+    redFlags: [],
+    postedHoursAgo: 2,
+    source: 'demo',
+  },
+  {
+    id: 'j5',
+    trade: 'loader',
+    title: { en: 'Warehouse loading and unloading', hi: 'गोदाम में माल चढ़ाना-उतारना', mr: 'गोदामात माल चढवणे-उतरवणे' },
+    description: {
+      en: 'Cement bags and boxes from trucks. Lunch provided.',
+      hi: 'ट्रक से सीमेंट की बोरियां और डिब्बे। दोपहर का खाना मिलेगा।',
+      mr: 'ट्रकमधून सिमेंटची पोती आणि खोकी. दुपारचे जेवण मिळेल.',
+    },
+    employer: { name: 'Pawar Logistics', type: 'business', phone: '99999 00105' },
+    locality: 'wakad',
+    landmark: 'Godown no. 7, Datta Mandir road',
+    pay: { amount: 650, period: 'day', timing: 'same_day' },
+    startDay: 0,
+    startTime: '07:30',
+    hoursPerDay: 9,
+    duration: { unit: 'day', count: 1 },
+    workersNeeded: 4,
+    provides: ['food', 'safety_gear'],
+    safetyGearMentioned: true,
+    redFlags: [],
+    postedHoursAgo: 1,
+    source: 'demo',
+  },
+  {
+    id: 'j6',
+    trade: 'helper',
+    title: { en: 'Construction helper — job abroad', hi: 'कंस्ट्रक्शन हेल्पर — विदेश में नौकरी', mr: 'बांधकाम मदतनीस — परदेशात नोकरी' },
+    description: {
+      en: 'Big salary! Pay ₹15,000 registration fee today and send Aadhaar and bank passbook photo to confirm your seat.',
+      hi: 'बड़ी तनख्वाह! आज ₹15,000 रजिस्ट्रेशन फीस दें और सीट पक्की करने के लिए आधार और बैंक पासबुक की फोटो भेजें।',
+      mr: 'मोठा पगार! आज ₹15,000 नोंदणी शुल्क भरा आणि जागा पक्की करण्यासाठी आधार व बँक पासबुकचा फोटो पाठवा.',
+    },
+    employer: { name: 'Global Manpower Services', type: 'business', phone: '99999 00106' },
+    locality: 'swargate',
+    pay: { amount: 45000, period: 'month' },
+    startDay: 7,
+    duration: { unit: 'month', count: 24 },
+    workersNeeded: 50,
+    provides: [],
+    safetyGearMentioned: false,
+    redFlags: ['fee', 'documents'],
+    feeAmount: 15000,
+    postedHoursAgo: 20,
+    source: 'demo',
+  },
+  {
+    id: 'j7',
+    trade: 'cleaner',
+    title: { en: 'Office deep cleaning', hi: 'ऑफिस की गहरी सफाई', mr: 'ऑफिसची संपूर्ण साफसफाई' },
+    description: {
+      en: 'Floors, glass and washrooms of a small office. Cleaning material provided.',
+      hi: 'छोटे ऑफिस के फर्श, कांच और बाथरूम। सफाई का सामान दिया जाएगा।',
+      mr: 'लहान ऑफिसचे फरशी, काच आणि बाथरूम. साफसफाईचे साहित्य दिले जाईल.',
+    },
+    employer: { name: 'Brightline Design Studio', type: 'business', phone: '99999 00107' },
+    locality: 'vimannagar',
+    landmark: '3rd floor, above the bank',
+    pay: { amount: 150, period: 'hour', timing: 'same_day' },
+    startDay: 0,
+    startTime: '14:00',
+    hoursPerDay: 4,
+    duration: { unit: 'day', count: 1 },
+    workersNeeded: 2,
+    provides: ['tools'],
+    safetyGearMentioned: true,
+    redFlags: [],
+    postedHoursAgo: 4,
+    source: 'demo',
+  },
+  {
+    id: 'j8',
+    trade: 'carpenter',
+    title: { en: 'Fit a modular wardrobe', hi: 'मॉड्यूलर अलमारी फिट करना', mr: 'मॉड्युलर कपाट बसवणे' },
+    description: {
+      en: 'Ready panels already delivered. Fitting, hinges and channels.',
+      hi: 'तैयार पैनल आ चुके हैं। फिटिंग, कब्ज़े और चैनल लगाने हैं।',
+      mr: 'तयार पॅनल आले आहेत. फिटिंग, बिजागरी आणि चॅनल बसवायचे.',
+    },
+    employer: { name: 'Mehta family', type: 'household', phone: '99999 00108' },
+    locality: 'kharadi',
+    landmark: 'Eon Homes, Tower B',
+    pay: { amount: 2500, period: 'job', timing: 'on_completion' },
+    startDay: 1,
+    startTime: '10:00',
+    hoursPerDay: 8,
+    duration: { unit: 'day', count: 2 },
+    workersNeeded: 1,
+    provides: [],
+    safetyGearMentioned: true,
+    redFlags: [],
+    postedHoursAgo: 6,
+    source: 'demo',
+  },
+  {
+    id: 'j9',
+    trade: 'helper',
+    title: { en: 'Site helper for new building', hi: 'नई बिल्डिंग के लिए साइट हेल्पर', mr: 'नवीन इमारतीसाठी साइट मदतनीस' },
+    description: {
+      en: 'Carrying material, mixing concrete, cleaning site.',
+      hi: 'सामान ढोना, कंक्रीट मिलाना, साइट साफ करना।',
+      mr: 'साहित्य वाहणे, काँक्रीट मिसळणे, साइट साफ करणे.',
+    },
+    employer: { name: 'Gaikwad Constructions', type: 'contractor', phone: '99999 00109' },
+    locality: 'hadapsar',
+    landmark: 'Magarpatta road, opposite petrol pump',
+    pay: { amount: 700, period: 'day', timing: 'weekly' },
+    startDay: 0,
+    startTime: '08:00',
+    hoursPerDay: 9,
+    duration: { unit: 'month', count: 2, ongoing: true },
+    workersNeeded: 8,
+    provides: ['tools'],
+    safetyGearMentioned: false,
+    redFlags: [],
+    postedHoursAgo: 8,
+    source: 'demo',
+  },
+  {
+    id: 'j10',
+    trade: 'cleaner',
+    title: { en: 'Housekeeping for housing society', hi: 'हाउसिंग सोसाइटी में हाउसकीपिंग', mr: 'गृहनिर्माण सोसायटीत हाउसकीपिंग' },
+    description: {
+      en: 'Regular monthly work. Staircases, lobby and garden area. Sunday off.',
+      hi: 'नियमित मासिक काम। सीढ़ियां, लॉबी और गार्डन। रविवार छुट्टी।',
+      mr: 'नियमित मासिक काम. जिने, लॉबी आणि बाग. रविवारी सुट्टी.',
+    },
+    employer: { name: 'Shantiban CHS', type: 'business', phone: '99999 00110' },
+    locality: 'kothrud',
+    landmark: 'Paud road, near metro station',
+    pay: { amount: 12000, period: 'month', timing: 'monthly' },
+    startDay: 3,
+    startTime: '07:00',
+    hoursPerDay: 8,
+    duration: { unit: 'month', count: 1, ongoing: true },
+    workersNeeded: 2,
+    provides: ['tools'],
+    safetyGearMentioned: true,
+    redFlags: [],
+    postedHoursAgo: 26,
+    source: 'demo',
+  },
+  {
+    id: 'j11',
+    trade: 'plumber',
+    title: { en: 'Urgent plumber needed', hi: 'तुरंत प्लंबर चाहिए', mr: 'तातडीने प्लंबर हवा' },
+    description: {
+      en: 'You will get an OTP on your phone. Share the OTP with us to confirm the booking.',
+      hi: 'आपके फोन पर OTP आएगा। बुकिंग पक्की करने के लिए हमें OTP बताएं।',
+      mr: 'तुमच्या फोनवर OTP येईल. बुकिंग पक्की करण्यासाठी आम्हाला OTP सांगा.',
+    },
+    employer: { name: 'QuickFix Home Services', type: 'business' },
+    locality: 'yerwada',
+    pay: { amount: 1000, period: 'day' },
+    startDay: 0,
+    duration: { unit: 'day', count: 1 },
+    workersNeeded: 1,
+    provides: [],
+    safetyGearMentioned: false,
+    redFlags: ['otp'],
+    postedHoursAgo: 2,
+    source: 'demo',
+  },
+  {
+    id: 'j12',
+    trade: 'painter',
+    title: { en: 'Exterior painting of bungalow', hi: 'बंगले की बाहरी पेंटिंग', mr: 'बंगल्याचे बाहेरील रंगकाम' },
+    employer: { name: 'Patil Painting Works', type: 'contractor' },
+    locality: 'pimpri',
+    pay: { amount: 850, period: 'day', timing: 'weekly' },
+    startDay: 2,
+    startTime: '08:30',
+    hoursPerDay: 8,
+    duration: { unit: 'day', count: 10 },
+    workersNeeded: 3,
+    provides: ['tools'],
+    safetyGearMentioned: false,
+    redFlags: [],
+    postedHoursAgo: 12,
+    source: 'demo',
+  },
+  {
+    id: 'j13',
+    trade: 'electrician',
+    title: { en: 'Fit ceiling fans and lights', hi: 'सीलिंग फैन और लाइट लगाना', mr: 'सीलिंग फॅन आणि दिवे बसवणे' },
+    description: {
+      en: 'New flat. 3 fans and 6 lights. Ladder available.',
+      hi: 'नया फ्लैट। 3 पंखे और 6 लाइट। सीढ़ी उपलब्ध है।',
+      mr: 'नवीन फ्लॅट. 3 पंखे आणि 6 दिवे. शिडी उपलब्ध आहे.',
+    },
+    employer: { name: 'Shinde family', type: 'household', phone: '99999 00113' },
+    locality: 'katraj',
+    landmark: 'Near Katraj lake entrance',
+    pay: { amount: 900, period: 'job', timing: 'same_day' },
+    startDay: 1,
+    startTime: '10:00',
+    hoursPerDay: 5,
+    duration: { unit: 'day', count: 1 },
+    workersNeeded: 1,
+    provides: [],
+    safetyGearMentioned: true,
+    redFlags: [],
+    postedHoursAgo: 3,
+    source: 'demo',
+  },
+  {
+    id: 'j14',
+    trade: 'loader',
+    title: { en: 'House shifting help', hi: 'घर का सामान शिफ्ट करना', mr: 'घराचे सामान हलवणे' },
+    description: {
+      en: 'Shifting a 1BHK to a new flat 2 km away. Tempo is arranged.',
+      hi: '1BHK का सामान 2 किमी दूर नए फ्लैट में। टेम्पो की व्यवस्था है।',
+      mr: '1BHK चे सामान 2 किमी दूर नवीन फ्लॅटमध्ये. टेम्पोची व्यवस्था आहे.',
+    },
+    employer: { name: 'Fernandes family', type: 'household', phone: '99999 00114' },
+    locality: 'baner',
+    landmark: 'Baner road, near Balewadi phata',
+    pay: { amount: 900, period: 'day', timing: 'same_day' },
+    startDay: 1,
+    startTime: '09:00',
+    hoursPerDay: 7,
+    duration: { unit: 'day', count: 1 },
+    workersNeeded: 3,
+    provides: ['travel'],
+    safetyGearMentioned: true,
+    redFlags: [],
+    postedHoursAgo: 5,
+    source: 'demo',
+  },
+];
