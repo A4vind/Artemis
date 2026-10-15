@@ -1,5 +1,6 @@
 import { ChevronDown, ExternalLink, FileText, HeartPulse, Landmark, Phone, PiggyBank, Scale, ShieldCheck, Siren, UserRound } from 'lucide-react';
 import { useState } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { SUPPORT_ITEMS, type SupportCategory, type SupportItem } from '../data/schemes';
 import { useT } from '../i18n';
 
@@ -15,7 +16,9 @@ const CATEGORIES: (SupportCategory | 'all')[] = ['all', 'register', 'pension', '
 
 export function Help() {
   const { t } = useT();
-  const [cat, setCat] = useState<SupportCategory | 'all'>('all');
+  const [params] = useSearchParams();
+  const initial = params.get('cat') as SupportCategory | null;
+  const [cat, setCat] = useState<SupportCategory | 'all'>(initial && initial in CATEGORY_ICON ? initial : 'all');
   const items = SUPPORT_ITEMS.filter((i) => cat === 'all' || i.category === cat);
 
   return (

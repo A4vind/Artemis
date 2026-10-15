@@ -24,8 +24,8 @@ export function Avatar({ profile, size = 'md' }: { profile: Pick<WorkerProfile, 
   );
 }
 
-/** The worker's résumé-free identity: skills, experience, area and availability. */
-export function KaamCard({ profile, compact }: { profile: WorkerProfile; compact?: boolean }) {
+/** The worker's resume-free identity: skills, experience, area and availability. */
+export function KaamCard({ profile, compact, days }: { profile: WorkerProfile; compact?: boolean; days?: number }) {
   const { t, lang } = useT();
   const langs = profile.languages.map((l) => LANG_OPTIONS.find((o) => o.id === l)!.native).join(', ');
 
@@ -72,6 +72,12 @@ export function KaamCard({ profile, compact }: { profile: WorkerProfile; compact
           <dt>{t('card.languages')}</dt>
           <dd>{langs}</dd>
         </div>
+        {!!days && (
+          <div>
+            <dt>{t('card.recorded')}</dt>
+            <dd>{t('card.recordedDays', { n: days })}</dd>
+          </div>
+        )}
         {profile.prefersLongTerm && (
           <div>
             <dt className="sr-only">{t('card.longTerm')}</dt>

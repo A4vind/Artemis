@@ -11,10 +11,10 @@ export type Vars = Record<string, string | number>;
 
 const DICTS: Record<Lang, Partial<Record<TKey, string>>> = { en, hi, mr };
 
-export const LANG_OPTIONS: { id: Lang; native: string; english: string }[] = [
-  { id: 'en', native: 'English', english: 'English' },
-  { id: 'hi', native: 'हिन्दी', english: 'Hindi' },
-  { id: 'mr', native: 'मराठी', english: 'Marathi' },
+export const LANG_OPTIONS: { id: Lang; native: string; short: string; english: string }[] = [
+  { id: 'en', native: 'English', short: 'EN', english: 'English' },
+  { id: 'hi', native: 'हिन्दी', short: 'हिं', english: 'Hindi' },
+  { id: 'mr', native: 'मराठी', short: 'मरा', english: 'Marathi' },
 ];
 
 /** BCP-47 locale for Intl formatting and speech. */

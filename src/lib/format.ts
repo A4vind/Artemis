@@ -25,12 +25,22 @@ export function payLong(t: T, job: Job): string {
   return `${rupees(amount)} ${period ? t(`job.perLong.${period}`) : `(${t('job.perMissing')})`}`;
 }
 
-export function startLabel(t: T, lang: Lang, startDay: number): string {
-  if (startDay === 0) return t('job.today');
-  if (startDay === 1) return t('job.tomorrow');
-  const d = new Date();
+/**
+ * When work starts. `startDay` counts from `from` (default: now), so offers made
+ * yesterday still show the right day. `absolute` always prints the date.
+ */
+export function startLabel(t: T, lang: Lang, startDay: number, from?: number, absolute = false): string {
+  const d = new Date(from ?? Date.now());
+  d.setHours(0, 0, 0, 0);
   d.setDate(d.getDate() + startDay);
-  return new Intl.DateTimeFormat(LOCALE[lang], { weekday: 'short', day: 'numeric', month: 'short' }).format(d);
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  const diff = Math.round((d.getTime() - today.getTime()) / 86400000);
+  const date = new Intl.DateTimeFormat(LOCALE[lang], { weekday: 'short', day: 'numeric', month: 'short' }).format(d);
+  if (absolute) return date;
+  if (diff === 0) return t('job.today');
+  if (diff === 1) return t('job.tomorrow');
+  return date;
 }
 
 export function timeLabel(lang: Lang, hhmm: string): string {

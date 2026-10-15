@@ -37,6 +37,9 @@ export function LanguageButton() {
       <button className="lang-btn" onClick={() => setOpen(true)} aria-haspopup="dialog">
         <Languages aria-hidden size={20} />
         <span className="lang-btn__label">{current.native}</span>
+        <span className="lang-btn__short" aria-hidden>
+          {current.short}
+        </span>
         <span className="sr-only">— {t('lang.title')}</span>
       </button>
       <Sheet

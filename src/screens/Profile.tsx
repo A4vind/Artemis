@@ -1,6 +1,7 @@
-import { Camera, IdCard, Pencil, Plus, Share2, Trash2, X } from 'lucide-react';
+import { Camera, IdCard, Pencil, Plus, QrCode as QrIcon, Share2, Trash2, X } from 'lucide-react';
 import { useRef, useState } from 'react';
 import { Avatar, KaamCard } from '../components/KaamCard';
+import { QrCode } from '../components/QrCode';
 import { Sheet } from '../components/Sheet';
 import { useToast } from '../components/Toast';
 import { Button, ButtonLink, ChoiceGroup, EmptyState, MultiChoiceGroup, TextField, TradeIcon, focusFirstError } from '../components/ui';
@@ -10,6 +11,8 @@ import type { WorkerProfile } from '../data/workers';
 import { LANG_OPTIONS, useT } from '../i18n';
 import { resizePhoto, shareText } from '../lib/device';
 import { localityName } from '../lib/format';
+import { kaamCardLink } from '../lib/hiring';
+import { diaryDaysLastYear } from './Diary';
 import { useStore } from '../state/store';
 import { AVAILABILITIES, EXPERIENCES, TRAVEL_OPTIONS, isValidPhone } from './Onboarding';
 
@@ -19,6 +22,8 @@ export function Profile() {
   const toast = useToast();
   const profile = state.profile;
   const [editing, setEditing] = useState(false);
+  const [naka, setNaka] = useState(false);
+  const days = diaryDaysLastYear(state.diary);
 
   if (!profile) {
     return (
@@ -66,9 +71,12 @@ export function Profile() {
         />
       ) : (
         <div className="card-view">
-          <KaamCard profile={profile} />
+          <KaamCard profile={profile} days={days} />
           <div className="btn-row">
-            <Button icon={Share2} onClick={share}>
+            <Button icon={QrIcon} onClick={() => setNaka(true)}>
+              {t('naka.show')}
+            </Button>
+            <Button variant="secondary" icon={Share2} onClick={share}>
               {t('card.share')}
             </Button>
             <Button variant="secondary" icon={Pencil} onClick={() => setEditing(true)}>
@@ -77,6 +85,18 @@ export function Profile() {
           </div>
         </div>
       )}
+
+      <Sheet open={naka} onClose={() => setNaka(false)} title={t('naka.title')}>
+        {naka && (
+          <div className="naka">
+            <p className="naka__name">{profile.name}</p>
+            <p className="naka__trades">{profile.trades.map((tr) => t(`trade.${tr}`)).join(' · ')}</p>
+            <QrCode value={kaamCardLink(profile, days)} label={t('naka.qrLabel', { name: profile.name })} size={260} />
+            <p className="lead">{t('naka.howTo')}</p>
+            <p className="small muted">{t('naka.privacy')}</p>
+          </div>
+        )}
+      </Sheet>
     </div>
   );
 }

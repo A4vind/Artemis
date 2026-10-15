@@ -1,5 +1,6 @@
-import { ChevronDown, IdCard, MapPin, Search, SearchX, X } from 'lucide-react';
+import { ChevronDown, ChevronRight, IdCard, Mail, MapPin, Search, SearchX, X } from 'lucide-react';
 import { useMemo, useState } from 'react';
+import { Link } from 'react-router-dom';
 import { JobCard } from '../components/JobCard';
 import { Sheet } from '../components/Sheet';
 import { useToast } from '../components/Toast';
@@ -96,6 +97,7 @@ export function WorkHome() {
   };
 
   const availableToday = profile?.availability === 'today';
+  const offers = state.applications.filter((a) => a.status === 'offered');
 
   const renderList = (list: Job[]) => (
     <ul className="job-list">
@@ -118,6 +120,17 @@ export function WorkHome() {
     <div className="page page--home">
       <section className="home-head">
         <h1 className="h1">{profile ? t('home.greeting', { name: profile.name }) : t('home.greetingGuest')}</h1>
+
+        {offers.length > 0 && (
+          <Link to="/my-jobs" className="offer-banner">
+            <Mail aria-hidden size={24} />
+            <span>
+              <strong>{offers.length === 1 ? t('home.offer1') : t('home.offers', { n: offers.length })}</strong>
+              <span>{t('home.offerHint')}</span>
+            </span>
+            <ChevronRight aria-hidden />
+          </Link>
+        )}
 
         {profile ? (
           <div className={`avail-card ${availableToday ? 'is-on' : ''}`}>

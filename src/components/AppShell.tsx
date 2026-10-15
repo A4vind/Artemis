@@ -1,4 +1,4 @@
-import { Briefcase, House, IdCard, LifeBuoy, Repeat, WifiOff } from 'lucide-react';
+import { BookOpen, Briefcase, House, IdCard, LifeBuoy, Repeat, WifiOff } from 'lucide-react';
 import { useEffect, useRef, type ReactNode } from 'react';
 import { Link, NavLink, useLocation } from 'react-router-dom';
 import { useT } from '../i18n';
@@ -12,6 +12,7 @@ const WORKER_NAV = [
   { to: '/work', icon: House, key: 'nav.work' },
   { to: '/my-jobs', icon: Briefcase, key: 'nav.applied' },
   { to: '/card', icon: IdCard, key: 'nav.card' },
+  { to: '/diary', icon: BookOpen, key: 'nav.diary' },
   { to: '/help', icon: LifeBuoy, key: 'nav.help' },
 ] as const;
 
@@ -38,7 +39,8 @@ export function AppShell({ mode, children }: { mode: 'worker' | 'employer'; chil
     mainRef.current?.focus({ preventScroll: true });
   }, [pathname]);
 
-  const appliedCount = state.applications.length;
+  // Badge shows what needs the worker's attention: offers to answer and fixed work to close.
+  const appliedCount = state.applications.filter((a) => a.status === 'offered' || a.status === 'accepted').length;
 
   return (
     <div className={`shell shell--${mode}`}>

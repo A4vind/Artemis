@@ -1,6 +1,23 @@
-import { ArrowRight, Check, ChevronLeft, CircleCheck, Eye, Megaphone, Pencil, TriangleAlert, Trash2, Users } from 'lucide-react';
+import {
+  ArrowRight,
+  Check,
+  ChevronLeft,
+  CircleCheck,
+  Eye,
+  FileText,
+  Handshake,
+  Megaphone,
+  Pencil,
+  Send,
+  TriangleAlert,
+  Trash2,
+  UserPlus,
+  Users,
+  X,
+} from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
+import { OfferForm, PakkaParchi } from '../components/Hiring';
 import { JobCard } from '../components/JobCard';
 import { Avatar, KaamCard } from '../components/KaamCard';
 import { PakkaCheckPanel } from '../components/PakkaCheckPanel';
@@ -24,8 +41,9 @@ import { TRADES, type TradeId } from '../data/trades';
 import { DEMO_WORKERS, type WorkerProfile } from '../data/workers';
 import { useT } from '../i18n';
 import { localityName, payParts, startLabel } from '../lib/format';
+import { demoApplicants, termsFromJob } from '../lib/hiring';
 import { pakkaCheck } from '../lib/pakkaCheck';
-import { useStore } from '../state/store';
+import { useStore, type Application, type OfferTerms } from '../state/store';
 import { isValidPhone } from './Onboarding';
 
 type Tab = 'post' | 'posts' | 'find';
@@ -59,7 +77,7 @@ export function Hire() {
 
       {tab === 'post' && <PostJob onPublished={() => setTab('posts')} />}
       {tab === 'posts' && <MyPosts onPost={() => setTab('post')} />}
-      {tab === 'find' && <FindWorkers />}
+      {tab === 'find' && <FindWorkers onPost={() => setTab('post')} />}
     </div>
   );
 }
@@ -420,11 +438,32 @@ function Review({ draft, onEdit }: { draft: Draft; onEdit: (s: number) => void }
 
 /* ================= My posts ================= */
 
+interface Applicant {
+  id: string;
+  profile: WorkerProfile;
+  isYou: boolean;
+  /** For the worker on this phone: their real application. */
+  app?: Application;
+  /** For demo workers: what the employer decided. */
+  decision?: string;
+}
+
+function applicantsFor(job: Job, apps: Application[], profile: WorkerProfile | null, decisions: Record<string, string>): Applicant[] {
+  const mine = apps.find((a) => a.jobId === job.id);
+  return [
+    ...(mine && profile ? [{ id: 'you', profile, isYou: true, app: mine }] : []),
+    ...demoApplicants(job).map((w) => ({ id: w.id, profile: w, isYou: false, decision: decisions[`${job.id}:${w.id}`] })),
+  ];
+}
+
 function MyPosts({ onPost }: { onPost: () => void }) {
   const { t, lt, lang } = useT();
   const { state, dispatch } = useStore();
   const toast = useToast();
   const [removing, setRemoving] = useState<Job | null>(null);
+  const [viewing, setViewing] = useState<WorkerProfile | null>(null);
+  const [offering, setOffering] = useState<{ job: Job; applicant: Applicant } | null>(null);
+  const [parchi, setParchi] = useState<Application | null>(null);
 
   if (!state.postedJobs.length) {
     return (
@@ -437,13 +476,27 @@ function MyPosts({ onPost }: { onPost: () => void }) {
     );
   }
 
+  const sendOffer = (terms: OfferTerms) => {
+    if (!offering) return;
+    const { job, applicant } = offering;
+    if (applicant.isYou) dispatch({ type: 'sendOffer', jobId: job.id, offer: { ...terms, at: Date.now() } });
+    else dispatch({ type: 'demoDecision', key: `${job.id}:${applicant.id}`, decision: 'offered' });
+    toast(t('hire.offerSent', { name: applicant.profile.name }));
+    setOffering(null);
+  };
+
+  const decline = (job: Job, a: Applicant) => {
+    if (a.isYou) dispatch({ type: 'notSelected', jobId: job.id });
+    else dispatch({ type: 'demoDecision', key: `${job.id}:${a.id}`, decision: 'declined' });
+    toast(t('hire.declined', { name: a.profile.name }), 'info');
+  };
+
   return (
     <>
-      <ul className="app-list">
+      <ul className="app-list app-list--single">
         {state.postedJobs.map((job) => {
           const pay = payParts(t, job);
-          // Applications made by the worker profile on this same device.
-          const applicants = state.applications.filter((a) => a.jobId === job.id);
+          const applicants = applicantsFor(job, state.applications, state.profile, state.demoDecisions);
           return (
             <li key={job.id} className="app-card">
               <div className="app-card__top">
@@ -455,15 +508,52 @@ function MyPosts({ onPost }: { onPost: () => void }) {
                   </p>
                 </div>
               </div>
-              <p className={`applicants ${applicants.length ? 'has-some' : ''}`}>
-                <Users aria-hidden size={18} />
-                {applicants.length === 0
-                  ? t('posts.applicants0')
-                  : applicants.length === 1
-                    ? t('posts.applicants1')
-                    : t('posts.applicants', { n: applicants.length })}
-              </p>
-              {applicants.length > 0 && state.profile && <KaamCard profile={state.profile} compact />}
+
+              <div className="applicants-block">
+                <p className={`applicants ${applicants.length ? 'has-some' : ''}`}>
+                  <Users aria-hidden size={18} />
+                  {applicants.length === 0
+                    ? t('posts.applicants0')
+                    : applicants.length === 1
+                      ? t('posts.applicants1')
+                      : t('posts.applicants', { n: applicants.length })}
+                </p>
+                <ul className="applicant-list">
+                  {applicants.map((a) => (
+                    <li key={a.id} className="applicant">
+                      <div className="applicant__who">
+                        <Avatar profile={a.profile} />
+                        <div>
+                          <p className="applicant__name">
+                            {a.profile.name}{' '}
+                            {a.isYou ? (
+                              <span className="tag tag--ink">{t('find.you')}</span>
+                            ) : (
+                              <span className="tag tag--muted">{t('hire.demoApplicant')}</span>
+                            )}
+                          </p>
+                          <p className="muted small">
+                            {a.profile.trades.map((tr) => t(`trade.${tr}`)).join(', ')} · {t(`exp.${a.profile.experience}`)} ·{' '}
+                            {localityName(a.profile.area, lang)}
+                          </p>
+                        </div>
+                      </div>
+                      <ApplicantActions
+                        applicant={a}
+                        onView={() => setViewing(a.profile)}
+                        onSelect={() => setOffering({ job, applicant: a })}
+                        onDecline={() => decline(job, a)}
+                        onParchi={() => setParchi(a.app!)}
+                        onDone={() => {
+                          dispatch({ type: 'employerDone', jobId: job.id });
+                          toast(t('hire.markedDone'));
+                        }}
+                      />
+                    </li>
+                  ))}
+                </ul>
+              </div>
+
               <div className="btn-row">
                 <ButtonLink to={`/work/${job.id}`} variant="secondary" icon={Eye}>
                   {t('posts.viewAs')}
@@ -476,6 +566,28 @@ function MyPosts({ onPost }: { onPost: () => void }) {
           );
         })}
       </ul>
+
+      <Sheet open={!!viewing} onClose={() => setViewing(null)} title={t('card.title')}>
+        {viewing && (
+          <div className="stack">
+            <KaamCard profile={viewing} />
+            <p className="muted small">{t('find.contactNote')}</p>
+          </div>
+        )}
+      </Sheet>
+
+      <Sheet
+        open={!!offering}
+        onClose={() => setOffering(null)}
+        title={offering ? t('hire.offerTitle', { name: offering.applicant.profile.name }) : ''}
+      >
+        {offering && <OfferForm initial={termsFromJob(offering.job, lang)} submitLabel={t('hire.sendOffer')} onSubmit={sendOffer} />}
+      </Sheet>
+
+      <Sheet open={!!parchi} onClose={() => setParchi(null)} title={t('parchi.title')}>
+        {parchi && <PakkaParchi app={parchi} />}
+      </Sheet>
+
       <Sheet
         open={!!removing}
         onClose={() => setRemoving(null)}
@@ -506,15 +618,85 @@ function MyPosts({ onPost }: { onPost: () => void }) {
   );
 }
 
+function ApplicantActions({
+  applicant: a,
+  onView,
+  onSelect,
+  onDecline,
+  onParchi,
+  onDone,
+}: {
+  applicant: Applicant;
+  onView: () => void;
+  onSelect: () => void;
+  onDecline: () => void;
+  onParchi: () => void;
+  onDone: () => void;
+}) {
+  const { t } = useT();
+  const status = a.isYou ? a.app!.status : a.decision ?? 'applied';
+  const view = (
+    <Button variant="quiet" onClick={onView}>
+      {t('find.viewCard')}
+    </Button>
+  );
+
+  if (status === 'applied')
+    return (
+      <div className="btn-row applicant__actions">
+        <Button icon={Handshake} onClick={onSelect}>
+          {t('hire.select')}
+        </Button>
+        <Button variant="ghost" icon={X} onClick={onDecline}>
+          {t('hire.decline')}
+        </Button>
+        {view}
+      </div>
+    );
+
+  const line = (cls: string, text: string) => <p className={`applicant__status ${cls}`}>{text}</p>;
+  if (status === 'offered' || status === 'invited')
+    return (
+      <div className="applicant__actions">
+        {line('is-waiting', a.isYou ? t('hire.status.offered') : t('hire.status.offeredDemo'))}
+        {view}
+      </div>
+    );
+  if (status === 'accepted' || status === 'done')
+    return (
+      <div className="applicant__actions">
+        {line('is-ok', status === 'done' ? t('hire.status.done') : t('hire.status.accepted'))}
+        <div className="btn-row">
+          <Button variant="secondary" icon={FileText} onClick={onParchi}>
+            {t('parchi.open')}
+          </Button>
+          {status === 'accepted' && !a.app!.employerDone && (
+            <Button variant="ghost" icon={CircleCheck} onClick={onDone}>
+              {t('hire.markDone')}
+            </Button>
+          )}
+        </div>
+      </div>
+    );
+  return (
+    <div className="applicant__actions">
+      {line('is-muted', status === 'worker_declined' ? t('hire.status.workerDeclined') : t('hire.status.notSelected'))}
+    </div>
+  );
+}
+
 /* ================= Find workers ================= */
 
-function FindWorkers() {
-  const { t, lang } = useT();
-  const { state } = useStore();
+function FindWorkers({ onPost }: { onPost: () => void }) {
+  const { t, lt, lang } = useT();
+  const { state, dispatch } = useStore();
+  const toast = useToast();
   const [trade, setTrade] = useState<TradeId | 'all'>('all');
   const [area, setArea] = useState<LocalityId>('shivajinagar');
   const [todayOnly, setTodayOnly] = useState(false);
   const [viewing, setViewing] = useState<WorkerProfile | null>(null);
+  const [inviting, setInviting] = useState<(WorkerProfile & { id: string; isYou?: boolean }) | null>(null);
+  const [inviteJobId, setInviteJobId] = useState<string | null>(null);
 
   const pool: (WorkerProfile & { id: string; isYou?: boolean })[] = [
     ...(state.profile ? [{ ...state.profile, id: 'you', isYou: true }] : []),
@@ -523,6 +705,22 @@ function FindWorkers() {
   const workers = pool
     .filter((w) => (trade === 'all' || w.trades.includes(trade)) && (!todayOnly || w.availability === 'today'))
     .sort((a, b) => distanceKm(area, a.area) - distanceKm(area, b.area));
+
+  const invitedTo = (w: { id: string; isYou?: boolean }) =>
+    w.isYou
+      ? state.applications.filter((a) => a.via === 'invited').map((a) => a.job)
+      : state.postedJobs.filter((j) => state.demoDecisions[`${j.id}:${w.id}`] === 'invited');
+
+  const inviteJob = state.postedJobs.find((j) => j.id === inviteJobId) ?? null;
+
+  const sendInvite = (terms: OfferTerms) => {
+    if (!inviting || !inviteJob) return;
+    if (inviting.isYou) dispatch({ type: 'invite', job: inviteJob, offer: { ...terms, at: Date.now() } });
+    else dispatch({ type: 'demoDecision', key: `${inviteJob.id}:${inviting.id}`, decision: 'invited' });
+    toast(t('hire.invited', { name: inviting.name }));
+    setInviting(null);
+    setInviteJobId(null);
+  };
 
   return (
     <section aria-labelledby="find-h" className="find">
@@ -566,27 +764,38 @@ function FindWorkers() {
         <EmptyState icon={Users} title={t('find.empty')} />
       ) : (
         <ul className="worker-list">
-          {workers.map((w) => (
-            <li key={w.id} className="worker-row">
-              <Avatar profile={w} />
-              <div className="worker-row__info">
-                <p className="worker-row__name">
-                  {w.name} {w.isYou && <span className="tag tag--ink">{t('find.you')}</span>}
-                </p>
-                <p className="muted small">
-                  {w.trades.map((tr) => t(`trade.${tr}`)).join(', ')} · {t(`exp.${w.experience}`)}
-                </p>
-                <p className="small">
-                  {localityName(w.area, lang)} ·{' '}
-                  {distanceKm(area, w.area) < 1 ? t('find.nearby') : t('job.distance', { n: distanceKm(area, w.area).toFixed(1) })} ·{' '}
-                  <span className={`avail-text avail-text--${w.availability}`}>{t(`availLabel.${w.availability}`)}</span>
-                </p>
-              </div>
-              <Button variant="secondary" onClick={() => setViewing(w)}>
-                {t('find.viewCard')}
-              </Button>
-            </li>
-          ))}
+          {workers.map((w) => {
+            const invited = invitedTo(w);
+            return (
+              <li key={w.id} className="worker-row">
+                <Avatar profile={w} />
+                <div className="worker-row__info">
+                  <p className="worker-row__name">
+                    {w.name} {w.isYou && <span className="tag tag--ink">{t('find.you')}</span>}
+                  </p>
+                  <p className="muted small">
+                    {w.trades.map((tr) => t(`trade.${tr}`)).join(', ')} · {t(`exp.${w.experience}`)}
+                  </p>
+                  <p className="small">
+                    {localityName(w.area, lang)} ·{' '}
+                    {distanceKm(area, w.area) < 1 ? t('find.nearby') : t('job.distance', { n: distanceKm(area, w.area).toFixed(1) })} ·{' '}
+                    <span className={`avail-text avail-text--${w.availability}`}>{t(`availLabel.${w.availability}`)}</span>
+                  </p>
+                  {invited.length > 0 && (
+                    <p className="applicant__status is-waiting">{t('hire.invitedTo', { title: invited.map((j) => lt(j.title)).join(', ') })}</p>
+                  )}
+                </div>
+                <div className="btn-row worker-row__actions">
+                  <Button icon={UserPlus} onClick={() => setInviting(w)}>
+                    {t('hire.invite')}
+                  </Button>
+                  <Button variant="secondary" onClick={() => setViewing(w)}>
+                    {t('find.viewCard')}
+                  </Button>
+                </div>
+              </li>
+            );
+          })}
         </ul>
       )}
 
@@ -597,6 +806,48 @@ function FindWorkers() {
             <p className="muted small">{t('find.contactNote')}</p>
           </div>
         )}
+      </Sheet>
+
+      <Sheet
+        open={!!inviting}
+        onClose={() => {
+          setInviting(null);
+          setInviteJobId(null);
+        }}
+        title={inviting ? t('hire.inviteTitle', { name: inviting.name }) : ''}
+      >
+        {inviting &&
+          (state.postedJobs.length === 0 ? (
+            <div className="stack">
+              <p className="lead">{t('hire.inviteNeedPost')}</p>
+              <Button icon={Send} onClick={onPost}>
+                {t('hire.tab.post')}
+              </Button>
+            </div>
+          ) : !inviteJob ? (
+            <ChoiceGroup
+              legend={t('hire.inviteWhich')}
+              value={inviteJobId}
+              onChange={setInviteJobId}
+              options={state.postedJobs.map((j) => ({
+                value: j.id,
+                label: lt(j.title),
+                hint: `${t(`trade.${j.trade}`)} · ${localityName(j.locality, lang)} · ${startLabel(t, lang, j.startDay)}`,
+                icon: <TradeIcon trade={j.trade} size="sm" />,
+              }))}
+            />
+          ) : (
+            <div className="stack">
+              <p className="muted">
+                {lt(inviteJob.title)} ·{' '}
+                <button className="link-btn" onClick={() => setInviteJobId(null)}>
+                  {t('hire.changeJob')}
+                </button>
+              </p>
+              {!inviting.isYou && <DemoTag>{t('hire.demoInviteNote')}</DemoTag>}
+              <OfferForm initial={termsFromJob(inviteJob, lang)} submitLabel={t('hire.sendInvite')} onSubmit={sendInvite} />
+            </div>
+          ))}
       </Sheet>
     </section>
   );
