@@ -1,9 +1,11 @@
 import { ArrowRight, ChevronLeft } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
 import { Link, useNavigate, useSearchParams } from 'react-router-dom';
+import { AreaPicker } from '../components/AreaPicker';
 import { KaamCard } from '../components/KaamCard';
+import { ProfilePhotoField } from '../components/PhotoFields';
 import { Button, ButtonLink, ChoiceGroup, Logo, MultiChoiceGroup, TextField, TradeIcon, focusFirstError } from '../components/ui';
-import { LOCALITIES, type LocalityId } from '../data/localities';
+import type { LocalityId } from '../data/localities';
 import { TRADES, type TradeId } from '../data/trades';
 import type { Availability, Experience, Lang, WorkerProfile } from '../data/workers';
 import { LANG_OPTIONS, useT } from '../i18n';
@@ -14,7 +16,7 @@ export const TRAVEL_OPTIONS = [3, 5, 10, 15];
 export const AVAILABILITIES: Availability[] = ['today', 'this_week', 'not_now'];
 export const isValidPhone = (p: string) => /^[6-9]\d{9}$/.test(p.replace(/\s/g, ''));
 
-const TOTAL = 5;
+const TOTAL = 6;
 
 export function Onboarding() {
   const { t, lang } = useT();
@@ -34,6 +36,7 @@ export function Onboarding() {
   const [availability, setAvailability] = useState<Availability>('today');
   const [languages, setLanguages] = useState<Lang[]>([lang]);
   const [phone, setPhone] = useState('');
+  const [photo, setPhoto] = useState<string | undefined>();
   const headingRef = useRef<HTMLHeadingElement>(null);
 
   useEffect(() => {
@@ -59,6 +62,10 @@ export function Onboarding() {
   const next = () => {
     if (!validate()) return;
     if (step < TOTAL) return setStep(step + 1);
+    finish();
+  };
+
+  const finish = (withPhoto = true) => {
     const profile: WorkerProfile = {
       name: name.trim(),
       trades,
@@ -68,6 +75,7 @@ export function Onboarding() {
       availability,
       languages,
       phone: phone.replace(/\s/g, '') || undefined,
+      photo: withPhoto ? photo : undefined,
       workExamples: [],
       prefersLongTerm: false,
     };
@@ -104,6 +112,7 @@ export function Onboarding() {
     3: t('onb.exp.q'),
     4: t('onb.area.q'),
     5: t('onb.avail.q'),
+    6: t('onb.photo.q'),
   };
 
   return (
@@ -174,16 +183,7 @@ export function Onboarding() {
 
           {step === 4 && (
             <div className="stack">
-              <ChoiceGroup
-                legend={t('onb.area.q')}
-                legendHidden
-                hint={t('onb.area.hint')}
-                value={area}
-                onChange={setArea}
-                error={errors.area}
-                layout="chips"
-                options={LOCALITIES.map((l) => ({ value: l.id, label: l.name[lang] }))}
-              />
+              <AreaPicker legend={t('onb.area.q')} legendHidden hint={t('onb.area.hint')} value={area} onChange={setArea} error={errors.area} />
               <ChoiceGroup
                 legend={t('onb.travel.q')}
                 value={String(travelKm)}
@@ -224,6 +224,18 @@ export function Onboarding() {
                 onChange={setPhone}
                 error={errors.phone}
               />
+            </div>
+          )}
+
+          {step === 6 && (
+            <div className="stack">
+              <p className="lead">{t('onb.photo.hint')}</p>
+              <ProfilePhotoField name={name} photo={photo} onChange={setPhoto} />
+              {!photo && (
+                <Button variant="quiet" onClick={() => finish(false)}>
+                  {t('onb.photo.skip')}
+                </Button>
+              )}
             </div>
           )}
 

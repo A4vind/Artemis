@@ -1,7 +1,7 @@
 import { Hammer } from 'lucide-react';
 import type { WorkerProfile } from '../data/workers';
 import { LANG_OPTIONS, useT } from '../i18n';
-import { localityName } from '../lib/format';
+import { localityName, rupees } from '../lib/format';
 import { TradeIcon } from './ui';
 
 export function initials(name: string) {
@@ -72,6 +72,24 @@ export function KaamCard({ profile, compact, days }: { profile: WorkerProfile; c
           <dt>{t('card.languages')}</dt>
           <dd>{langs}</dd>
         </div>
+        {!!profile.shifts?.length && (
+          <div>
+            <dt>{t('card.shifts')}</dt>
+            <dd>{profile.shifts.map((sh) => t(`shift.${sh}`)).join(', ')}</dd>
+          </div>
+        )}
+        {profile.ownTools !== undefined && (
+          <div>
+            <dt>{t('card.tools')}</dt>
+            <dd>{profile.ownTools ? t('edit.toolsYes') : t('edit.toolsNo')}</dd>
+          </div>
+        )}
+        {!!profile.expectedWage && (
+          <div>
+            <dt>{t('card.wage')}</dt>
+            <dd>{t('card.wageValue', { amount: rupees(profile.expectedWage) })}</dd>
+          </div>
+        )}
         {!!days && (
           <div>
             <dt>{t('card.recorded')}</dt>
@@ -91,13 +109,22 @@ export function KaamCard({ profile, compact, days }: { profile: WorkerProfile; c
           <h3>
             <Hammer aria-hidden size={16} /> {t('card.workDone')}
           </h3>
+          {!!profile.workPhotos?.length && (
+            <ul className="work-photos">
+              {profile.workPhotos.map((src, i) => (
+                <li key={i}>
+                  <img src={src} alt={t('card.workPhotoAlt', { name: profile.name, n: i + 1 })} loading="lazy" />
+                </li>
+              ))}
+            </ul>
+          )}
           {profile.workExamples.length ? (
             <ul>
               {profile.workExamples.map((w) => (
                 <li key={w}>{w}</li>
               ))}
             </ul>
-          ) : (
+          ) : profile.workPhotos?.length ? null : (
             <p className="muted">{t('card.noWork')}</p>
           )}
         </div>

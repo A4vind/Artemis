@@ -69,7 +69,8 @@ export function hoursLabel(t: T, lang: Lang, job: Job): string | null {
 export function postedLabel(t: T, hours: number): string {
   if (hours < 1) return t('job.postedNow');
   if (hours < 24) return t('job.postedHours', { n: hours });
-  return t('job.postedDays', { n: Math.floor(hours / 24) });
+  const days = Math.floor(hours / 24);
+  return days === 1 ? t('job.postedDay1') : t('job.postedDays', { n: days });
 }
 
 export function jobDistance(job: Job, from: LocalityId): number {

@@ -1,20 +1,25 @@
-import { Camera, IdCard, Pencil, Plus, QrCode as QrIcon, Share2, Trash2, X } from 'lucide-react';
-import { useRef, useState } from 'react';
-import { Avatar, KaamCard } from '../components/KaamCard';
+import { IdCard, ImagePlus, Lock, Pencil, Plus, QrCode as QrIcon, Share2, Trash2, X } from 'lucide-react';
+import { useState } from 'react';
+import { KaamCard } from '../components/KaamCard';
+import { ProfilePhotoField, WorkPhotosField } from '../components/PhotoFields';
 import { QrCode } from '../components/QrCode';
+import { AreaPicker } from '../components/AreaPicker';
 import { Sheet } from '../components/Sheet';
 import { useToast } from '../components/Toast';
 import { Button, ButtonLink, ChoiceGroup, EmptyState, MultiChoiceGroup, TextField, TradeIcon, focusFirstError } from '../components/ui';
-import { LOCALITIES } from '../data/localities';
 import { TRADES } from '../data/trades';
-import type { WorkerProfile } from '../data/workers';
+import type { AgeRange, Gender, Shift, WorkerProfile } from '../data/workers';
 import { LANG_OPTIONS, useT } from '../i18n';
-import { resizePhoto, shareText } from '../lib/device';
+import { shareText } from '../lib/device';
 import { localityName } from '../lib/format';
 import { kaamCardLink } from '../lib/hiring';
 import { diaryDaysLastYear } from './Diary';
 import { useStore } from '../state/store';
 import { AVAILABILITIES, EXPERIENCES, TRAVEL_OPTIONS, isValidPhone } from './Onboarding';
+
+const SHIFTS: Shift[] = ['morning', 'day', 'night'];
+const AGE_RANGES: AgeRange[] = ['18to25', '26to40', '41to59', '60plus'];
+const GENDERS: Gender[] = ['woman', 'man', 'other', 'no_say'];
 
 export function Profile() {
   const { t, lang } = useT();
@@ -72,6 +77,15 @@ export function Profile() {
       ) : (
         <div className="card-view">
           <KaamCard profile={profile} days={days} />
+          {!profile.workPhotos?.length && (
+            <button className="nudge" onClick={() => setEditing(true)}>
+              <ImagePlus aria-hidden size={24} />
+              <span>
+                <strong>{t('card.nudgeTitle')}</strong>
+                <span>{t('card.nudgeBody')}</span>
+              </span>
+            </button>
+          )}
           <div className="btn-row">
             <Button icon={QrIcon} onClick={() => setNaka(true)}>
               {t('naka.show')}
@@ -102,14 +116,14 @@ export function Profile() {
 }
 
 function ProfileEditor({ profile, onSave, onCancel }: { profile: WorkerProfile; onSave: (p: WorkerProfile) => void; onCancel: () => void }) {
-  const { t, lang } = useT();
+  const { t } = useT();
   const { dispatch } = useStore();
   const toast = useToast();
   const [p, setP] = useState<WorkerProfile>(profile);
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [newWork, setNewWork] = useState('');
+  const [wage, setWage] = useState(profile.expectedWage ? String(profile.expectedWage) : '');
   const [confirmDelete, setConfirmDelete] = useState(false);
-  const fileRef = useRef<HTMLInputElement>(null);
   const set = <K extends keyof WorkerProfile>(k: K, v: WorkerProfile[K]) => setP((cur) => ({ ...cur, [k]: v }));
 
   const save = () => {
@@ -118,13 +132,20 @@ function ProfileEditor({ profile, onSave, onCancel }: { profile: WorkerProfile; 
     if (!p.trades.length) e.trades = t('onb.trades.err');
     if (!p.languages.length) e.languages = t('onb.lang.err');
     if (p.phone && !isValidPhone(p.phone)) e.phone = t('onb.phone.err');
+    if (wage && !(Number(wage) >= 100 && Number(wage) <= 5000)) e.wage = t('edit.wageErr');
     setErrors(e);
     if (Object.keys(e).length) {
       toast(t('post.err.summary'), 'error');
       focusFirstError();
       return;
     }
-    onSave({ ...p, name: p.name.trim(), phone: p.phone?.replace(/\s/g, '') || undefined });
+    onSave({
+      ...p,
+      name: p.name.trim(),
+      phone: p.phone?.replace(/\s/g, '') || undefined,
+      expectedWage: wage ? Number(wage) : undefined,
+      hometown: p.hometown?.trim() || undefined,
+    });
   };
 
   const addWork = () => {
@@ -132,15 +153,6 @@ function ProfileEditor({ profile, onSave, onCancel }: { profile: WorkerProfile; 
     if (!w) return;
     set('workExamples', [...p.workExamples, w]);
     setNewWork('');
-  };
-
-  const onPhoto = async (file?: File) => {
-    if (!file) return;
-    try {
-      set('photo', await resizePhoto(file));
-    } catch {
-      toast(t('edit.photoErr'), 'error');
-    }
   };
 
   return (
@@ -154,34 +166,7 @@ function ProfileEditor({ profile, onSave, onCancel }: { profile: WorkerProfile; 
     >
       <h2 className="h2">{t('edit.title')}</h2>
 
-      <div className="photo-field">
-        <Avatar profile={p} size="lg" />
-        <div className="stack stack--sm">
-          <span className="field__label">
-            {t('edit.photo')} <span className="field__opt">· {t('common.optional')}</span>
-          </span>
-          <p className="field__hint">{t('edit.photoHint')}</p>
-          <div className="btn-row">
-            <Button variant="secondary" icon={Camera} onClick={() => fileRef.current?.click()}>
-              {p.photo ? t('edit.changePhoto') : t('edit.addPhoto')}
-            </Button>
-            {p.photo && (
-              <Button variant="quiet" onClick={() => set('photo', undefined)}>
-                {t('edit.removePhoto')}
-              </Button>
-            )}
-          </div>
-          <input
-            ref={fileRef}
-            type="file"
-            accept="image/*"
-            className="sr-only"
-            tabIndex={-1}
-            aria-hidden
-            onChange={(e) => onPhoto(e.target.files?.[0])}
-          />
-        </div>
-      </div>
+      <ProfilePhotoField name={p.name} photo={p.photo} onChange={(ph) => set('photo', ph)} />
 
       <TextField label={t('onb.name.label')} value={p.name} onChange={(v) => set('name', v)} error={errors.name} maxLength={40} />
 
@@ -201,13 +186,7 @@ function ProfileEditor({ profile, onSave, onCancel }: { profile: WorkerProfile; 
         options={EXPERIENCES.map((e) => ({ value: e, label: t(`exp.${e}`) }))}
       />
 
-      <ChoiceGroup
-        legend={t('onb.area.q')}
-        layout="chips"
-        value={p.area}
-        onChange={(v) => set('area', v)}
-        options={LOCALITIES.map((l) => ({ value: l.id, label: l.name[lang] }))}
-      />
+      <AreaPicker legend={t('onb.area.q')} value={p.area} onChange={(v) => set('area', v)} />
 
       <ChoiceGroup
         legend={t('onb.travel.q')}
@@ -281,6 +260,64 @@ function ProfileEditor({ profile, onSave, onCancel }: { profile: WorkerProfile; 
           </Button>
         </div>
       </div>
+
+      <WorkPhotosField photos={p.workPhotos ?? []} onChange={(ph) => set('workPhotos', ph)} />
+
+      <fieldset className="editor__section">
+        <legend className="h3">{t('edit.workDetails')}</legend>
+        <ChoiceGroup
+          legend={t('edit.ownTools')}
+          layout="row"
+          value={p.ownTools === undefined ? null : p.ownTools ? 'yes' : 'no'}
+          onChange={(v) => set('ownTools', v === 'yes')}
+          options={[
+            { value: 'yes', label: t('edit.toolsYes') },
+            { value: 'no', label: t('edit.toolsNo') },
+          ]}
+        />
+        <TextField
+          label={t('edit.wage')}
+          hint={t('edit.wageHint')}
+          optional
+          type="number"
+          inputMode="numeric"
+          min={100}
+          max={5000}
+          value={wage}
+          onChange={setWage}
+          error={errors.wage}
+          className="input input--short"
+        />
+        <MultiChoiceGroup
+          legend={t('edit.shifts')}
+          layout="row"
+          values={p.shifts ?? []}
+          onChange={(v) => set('shifts', v)}
+          options={SHIFTS.map((sh) => ({ value: sh, label: t(`shift.${sh}`) }))}
+        />
+      </fieldset>
+
+      <fieldset className="editor__section editor__section--private">
+        <legend className="h3">
+          <Lock aria-hidden size={18} /> {t('edit.private')}
+        </legend>
+        <p className="field__hint">{t('edit.privateHint')}</p>
+        <ChoiceGroup
+          legend={t('edit.age')}
+          layout="chips"
+          value={p.ageRange ?? null}
+          onChange={(v) => set('ageRange', v)}
+          options={AGE_RANGES.map((a) => ({ value: a, label: t(`age.${a}`) }))}
+        />
+        <ChoiceGroup
+          legend={t('edit.gender')}
+          layout="chips"
+          value={p.gender ?? null}
+          onChange={(v) => set('gender', v)}
+          options={GENDERS.map((g) => ({ value: g, label: t(`gender.${g}`) }))}
+        />
+        <TextField label={t('edit.hometown')} hint={t('edit.hometownHint')} optional value={p.hometown ?? ''} onChange={(v) => set('hometown', v)} maxLength={60} />
+      </fieldset>
 
       <TextField
         label={t('onb.phone.label')}

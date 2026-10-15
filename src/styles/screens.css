@@ -1537,3 +1537,109 @@
   background: var(--c-danger-soft);
   color: var(--c-danger);
 }
+
+/* ============ Profile details ============ */
+.work-photos {
+  list-style: none;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(96px, 1fr));
+  gap: var(--s-2);
+  margin-bottom: var(--s-2);
+}
+.work-photos li {
+  position: relative;
+  aspect-ratio: 1;
+}
+.work-photos img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  border-radius: var(--r-sm);
+  background: var(--c-sand);
+}
+.kaam-card .work-photos img {
+  border: 2px solid rgba(255, 255, 255, 0.85);
+}
+.work-photos__remove {
+  position: absolute;
+  top: 4px;
+  right: 4px;
+  display: grid;
+  place-items: center;
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  border: 0;
+  background: rgba(42, 26, 14, 0.8);
+  color: #fff;
+}
+.work-photos__add {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  border-radius: var(--r-sm);
+  border: 2px dashed var(--c-line-strong);
+  background: var(--c-surface);
+  color: var(--c-primary);
+  font-weight: 700;
+  font-size: var(--fs-sm);
+}
+.work-photos__add:hover {
+  border-color: var(--c-primary);
+  background: var(--c-primary-soft);
+}
+.work-photos__add:disabled {
+  opacity: 0.6;
+}
+.editor__section {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s-5);
+  padding: var(--s-4);
+  border-radius: var(--r-md);
+  border: 1.5px solid var(--c-line);
+}
+.editor__section > legend {
+  display: flex;
+  align-items: center;
+  gap: var(--s-2);
+  padding: 0 var(--s-2);
+  color: var(--c-ink);
+}
+.editor__section--private {
+  background: var(--c-bg);
+  border-style: dashed;
+}
+.nudge {
+  display: flex;
+  align-items: center;
+  gap: var(--s-3);
+  width: 100%;
+  padding: var(--s-3) var(--s-4);
+  border-radius: var(--r-lg);
+  border: 2px dashed var(--c-primary);
+  background: var(--c-primary-soft);
+  color: var(--c-primary-hover);
+  text-align: left;
+}
+.nudge > svg {
+  flex: none;
+}
+.nudge > span {
+  display: flex;
+  flex-direction: column;
+  line-height: 1.35;
+}
+.nudge > span span {
+  font-size: var(--fs-sm);
+}
+.scheme-hint ul {
+  margin: var(--s-2) 0;
+  padding-left: var(--s-5);
+  display: grid;
+  gap: 4px;
+}

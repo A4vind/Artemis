@@ -21,6 +21,7 @@ import { OfferForm, PakkaParchi } from '../components/Hiring';
 import { JobCard } from '../components/JobCard';
 import { Avatar, KaamCard } from '../components/KaamCard';
 import { PakkaCheckPanel } from '../components/PakkaCheckPanel';
+import { AreaPicker } from '../components/AreaPicker';
 import { Sheet } from '../components/Sheet';
 import { useToast } from '../components/Toast';
 import {
@@ -36,7 +37,7 @@ import {
   focusFirstError,
 } from '../components/ui';
 import type { EmployerType, Job, PayPeriod, PayTiming, Provision } from '../data/jobs';
-import { LOCALITIES, distanceKm, type LocalityId } from '../data/localities';
+import { CITIES, distanceKm, localitiesIn, type LocalityId } from '../data/localities';
 import { TRADES, type TradeId } from '../data/trades';
 import { DEMO_WORKERS, type WorkerProfile } from '../data/workers';
 import { useT } from '../i18n';
@@ -158,7 +159,7 @@ function toJob(d: Draft): Job {
 }
 
 function PostJob({ onPublished }: { onPublished: () => void }) {
-  const { t, lang } = useT();
+  const { t } = useT();
   const { dispatch } = useStore();
   const toast = useToast();
   const [d, setD] = useState<Draft>(EMPTY);
@@ -289,14 +290,7 @@ function PostJob({ onPublished }: { onPublished: () => void }) {
 
         {step === 1 && (
           <div className="stack">
-            <ChoiceGroup
-              legend={`${t('post.area')} *`}
-              layout="chips"
-              value={d.area}
-              onChange={(v) => set('area', v)}
-              error={errors.area}
-              options={LOCALITIES.map((l) => ({ value: l.id, label: l.name[lang] }))}
-            />
+            <AreaPicker legend={`${t('post.area')} *`} value={d.area} onChange={(v) => set('area', v)} error={errors.area} />
             <TextField label={t('post.landmark')} hint={t('post.landmarkHint')} optional value={d.landmark} onChange={(v) => set('landmark', v)} maxLength={80} />
             <ChoiceGroup
               legend={`${t('post.start')} *`}
@@ -735,10 +729,14 @@ function FindWorkers({ onPost }: { onPost: () => void }) {
             {t('post.area')}
           </label>
           <select id="find-area" className="input" value={area} onChange={(e) => setArea(e.target.value as LocalityId)}>
-            {LOCALITIES.map((l) => (
-              <option key={l.id} value={l.id}>
-                {l.name[lang]}
-              </option>
+            {CITIES.map((c) => (
+              <optgroup key={c} label={t(`city.${c}`)}>
+                {localitiesIn(c).map((l) => (
+                  <option key={l.id} value={l.id}>
+                    {l.name[lang]}
+                  </option>
+                ))}
+              </optgroup>
             ))}
           </select>
         </div>

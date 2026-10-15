@@ -1,8 +1,19 @@
-import { ChevronDown, ExternalLink, FileText, HeartPulse, Landmark, Phone, PiggyBank, Scale, ShieldCheck, Siren, UserRound } from 'lucide-react';
+import { ChevronDown, ExternalLink, FileText, HeartPulse, Landmark, Phone, PiggyBank, Scale, ShieldCheck, Siren, Sparkles, UserRound } from 'lucide-react';
 import { useState } from 'react';
-import { useSearchParams } from 'react-router-dom';
+import { Link, useSearchParams } from 'react-router-dom';
 import { SUPPORT_ITEMS, type SupportCategory, type SupportItem } from '../data/schemes';
+import type { TradeId } from '../data/trades';
+import type { AgeRange, WorkerProfile } from '../data/workers';
 import { useT } from '../i18n';
+import { useStore } from '../state/store';
+
+/** Age bands each scheme is open to (from the official rules summarised in data/schemes.ts). */
+const AGE_FIT: Record<string, AgeRange[]> = {
+  eshram: ['18to25', '26to40', '41to59'],
+  pmsym: ['18to25', '26to40'],
+  mahabocw: ['18to25', '26to40', '41to59'],
+};
+const BUILDING_TRADES: TradeId[] = ['mason', 'helper', 'painter', 'carpenter', 'electrician', 'plumber'];
 
 const CATEGORY_ICON = {
   register: Landmark,
@@ -27,6 +38,8 @@ export function Help() {
         <h1 className="h1">{t('help.title')}</h1>
         <p className="lead">{t('help.sub')}</p>
       </header>
+
+      <SchemeHint />
 
       <section className="rules" aria-labelledby="rules-h">
         <h2 id="rules-h" className="rules__title">
@@ -143,5 +156,49 @@ function SupportCard({ item }: { item: SupportItem }) {
         )}
       </div>
     </article>
+  );
+}
+
+/** Personal hint: which listed schemes the worker may fit, from their private age range and trades. */
+function SchemeHint() {
+  const { t, lt } = useT();
+  const { state } = useStore();
+  const profile: WorkerProfile | null = state.profile;
+  if (!profile) return null;
+  if (!profile.ageRange)
+    return (
+      <p className="callout callout--info">
+        <Sparkles aria-hidden />
+        <span>
+          {t('hint.addAge')} <Link to="/card">{t('hint.addAgeLink')}</Link>
+        </span>
+      </p>
+    );
+
+  const builds = profile.trades.some((tr) => BUILDING_TRADES.includes(tr));
+  const fits = SUPPORT_ITEMS.filter((i) => AGE_FIT[i.id]?.includes(profile.ageRange!) && (i.id !== 'mahabocw' || builds));
+
+  return (
+    <section className="callout callout--info scheme-hint" aria-labelledby="hint-h">
+      <Sparkles aria-hidden />
+      <div>
+        <h2 id="hint-h" className="h3">
+          {t('hint.title', { age: t(`age.${profile.ageRange}`) })}
+        </h2>
+        {fits.length ? (
+          <ul>
+            {fits.map((i) => (
+              <li key={i.id}>
+                <strong>{lt(i.name)}</strong>
+                {i.id === 'mahabocw' && <span className="small"> — {t('hint.bocwNote')}</span>}
+              </li>
+            ))}
+          </ul>
+        ) : (
+          <p>{t('hint.none')}</p>
+        )}
+        <p className="small">{t('hint.check')}</p>
+      </div>
+    </section>
   );
 }

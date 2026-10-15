@@ -2,11 +2,12 @@ import { ChevronDown, ChevronRight, IdCard, Mail, MapPin, Search, SearchX, X } f
 import { useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { JobCard } from '../components/JobCard';
+import { AreaPicker } from '../components/AreaPicker';
 import { Sheet } from '../components/Sheet';
 import { useToast } from '../components/Toast';
 import { Button, ButtonLink, ChoiceGroup, DemoTag, EmptyState, TradeIcon } from '../components/ui';
 import type { Job } from '../data/jobs';
-import { LOCALITIES, localityById, type LocalityId } from '../data/localities';
+import { localityById, type LocalityId } from '../data/localities';
 import { TRADES, type TradeId } from '../data/trades';
 import { useT } from '../i18n';
 import { useSpeaker } from '../lib/device';
@@ -283,13 +284,7 @@ export function WorkHome() {
         }
       >
         <div className="stack">
-          <ChoiceGroup
-            legend={t('post.area')}
-            layout="chips"
-            value={draftArea.area}
-            onChange={(a) => setDraftArea((d) => ({ ...d, area: a }))}
-            options={LOCALITIES.map((l) => ({ value: l.id, label: l.name[lang] }))}
-          />
+          <AreaPicker legend={t('post.area')} value={draftArea.area} onChange={(a) => setDraftArea((d) => ({ ...d, area: a }))} />
           <ChoiceGroup
             legend={t('onb.travel.q')}
             layout="chips"

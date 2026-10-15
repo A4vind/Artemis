@@ -36,7 +36,7 @@ and says so. Employers see the same check before publishing, which nudges them t
 | Area | What works |
 |---|---|
 | Welcome | Language choice in native script up front, worker / employer entry |
-| Onboarding | 5 tap-first steps (name, trades, experience, area + travel distance, availability/languages); no resume, no documents; phone optional |
+| Onboarding | 6 tap-first steps (name, trades, experience, city + area + travel distance, availability/languages, optional photo with Skip); no resume, no documents; phone optional |
 | Work home | "Free today" switch, area + distance, search, quick filters, jobs grouped by *your work types* then *other work near you*, read-aloud per job |
 | Job detail | Big pay with period and timing, total-earnings estimate with its calculation shown, per-hour rate, facts grid, employer info ("not checked by KaamSetu"), Pakka Check, apply, report |
 | Apply | Recap of conditions + warnings before confirming; honest demo confirmation |
@@ -44,10 +44,10 @@ and says so. Employers see the same check before publishing, which nudges them t
 | Hiring loop | Employer selects or declines applicants and sends an **offer** with exact terms; worker accepts → **Pakka Parchi** (shareable agreed-terms slip); employer marks work complete; worker records **Did you get paid?** (yes / partly / no) → unpaid amounts lead to complaint routes |
 | Naka mode | **Kaam Card QR** to show at the roadside hiring point: a contractor scans it with any phone camera and sees the card (no phone number or photo in it). Employers can **invite** a worker who is free today, so work comes to the worker |
 | Kaam Diary | Days worked and money received, added automatically from finished jobs or by hand for naka work; this month's days / money / still owed; progress towards the construction board's 90-day rule; shareable record; days feed the Kaam Card |
-| Kaam Card | Resume-free work identity; QR for the naka; share (phone share sheet or clipboard); recorded work days; edit everything incl. optional photo (stays on device) and "work I've done"; delete my data |
-| Help & rights | 4 safety rules; e-Shram, Maharashtra BOCW, PM-SYM, PM-JAY, CPGRAMS, SAMADHAN, 1930 cyber-fraud, 112 — eligibility, documents, how to apply, helpline, official link |
+| Kaam Card | Resume-free work identity; QR for the naka; share; recorded work days; optional profile photo and up to 4 **photos of past work**; work details (own tools, usual daily rate, shifts); **private details** (age band, gender, home town) that are never shown to employers or put in the QR and only power a "schemes you may be able to apply for" hint on Help; delete my data |
+| Help & rights | Personal "you may be able to apply for" hint from the worker's private age band and trades; 4 safety rules; e-Shram, Maharashtra BOCW, PM-SYM, PM-JAY, CPGRAMS, SAMADHAN, 1930 cyber-fraud, 112 — eligibility, documents, how to apply, helpline, official link |
 | Employer | 4-step post-work form with required pay/hours/timing/contact and a no-fee pledge; review with Pakka Check preview; My posts with applicants to select or decline; Find workers with **Invite** |
-| Language | English, हिन्दी, मराठी — all 568 UI strings translated; central dictionary with English fallback |
+| Language | English, हिन्दी, मराठी — all 618 UI strings translated; central dictionary with English fallback |
 | Accessibility | Semantic HTML, labelled controls, native `<dialog>` sheets (focus trap, Esc), visible focus, live-region toasts, focus moves to first error, icons always with text, status never by colour alone, reduced-motion, larger-text setting |
 | Resilience | Offline banner; everything works offline from local state |
 
@@ -72,11 +72,11 @@ React 19 · TypeScript · Vite · React Router · Lucide icons · plain CSS with
 
 ```
 src/
-  data/        trades, localities (Pune), demo jobs, demo workers, schemes
+  data/        trades, localities (Pune + Mumbai), demo jobs, demo workers, schemes
   i18n/        en.ts (source), hi.ts, mr.ts, useT()
   lib/         pakkaCheck.ts, hiring.ts (offers, changes, totals, QR link), format.ts, device.ts
   state/       store.tsx (reducer + persistence)
-  components/  AppShell, JobCard, PakkaCheckPanel, KaamCard, Hiring (offer form, Parchi), QrCode, Sheet, Toast, ui
+  components/  AppShell, JobCard, PakkaCheckPanel, KaamCard, PhotoFields, AreaPicker, Hiring (offer form, Parchi), QrCode, Sheet, Toast, ui
   screens/     Welcome, Onboarding, WorkHome, JobDetail, MyJobs, Diary, Profile, PublicCard, Help, Hire
 ```
 
@@ -97,7 +97,7 @@ src/
 
 - No backend: no real employers, messaging, payments or verification; data lives in one browser, so the hiring loop is demonstrated by switching between worker and employer on the same phone.
 - The naka QR opens a public link, so it only works for someone else's phone once the app is deployed (it cannot reach `localhost`).
-- Locations are a fixed list of Pune areas; distances are straight-line estimates (labelled).
+- Locations are a fixed list of Pune and Mumbai areas (Mumbai includes Thane and Vashi); distances are straight-line estimates (labelled).
 - Read-aloud depends on the phone having a Hindi/Marathi voice; the app tells the user when it doesn't.
 - Employer-written job text appears in the language it was written in (demo jobs include Hindi/Marathi).
 - Scheme information is a summary and may change.
